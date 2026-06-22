@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <title>三潭印月 · AR</title>
+
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+
+  <style>
+    * { margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; overflow: hidden; }
+    body { background: #000; font-family: 'PingFang SC','Microsoft YaHei',sans-serif; }
+    a-scene { position: fixed !important; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+
+    #msg {
+      position: fixed; top: 18px; left: 50%; transform: translateX(-50%);
+      background: rgba(26,18,8,0.9); color: #C9A96E;
+      padding: 10px 28px; border-radius: 30px;
+      font-size: 15px; z-index: 20; letter-spacing: 2px;
+    }
+    .found #msg { background: rgba(20,60,20,0.9); color: #FFD700; }
+  </style>
+</head>
+<body>
+  <div id="msg">📱 对准图像目标</div>
+
+  <a-scene id="ar-scene"
+           mindar-image="imageTargetSrc: ./targets.mind;
+                         maxTrack: 1;
+                         uiLoading: no;
+                         uiScanning: no;
+                         uiError: no;"
+           embedded
+           vr-mode-ui="enabled: false">
+
+    <a-entity mindar-image-target="targetIndex: 0">
+
+      <!-- ===== 💡 灯光 ===== -->
+      <a-entity light="type: ambient; intensity: 0.55; color: #FFF8EE"></a-entity>
+      <a-entity light="type: directional; intensity: 0.75; color: #FFF5E8;" position="0.3 1.5 0.5"></a-entity>
+
+      <!-- ============================================
+           🔄🔄🔄  替换 3D 内容从这里开始  🔄🔄🔄
+           ============================================ -->
+
+      <!-- === 🟢 3D 模型（有 .glb 文件时用这个） === -->
+      <!-- 🔄 替换 src 为你的模型路径 -->
+      <!-- 🔄 调整 position/scale/rotation 让模型位置合适 -->
+      <a-gltf-model id="model-3d"
+                    src="./model/scene.glb"
+                    position="0 0.3 0"
+                    scale="0.5 0.5 0.5"
+                    visible="false">
+      </a-gltf-model>
+
+      <!-- === 🟡 兜底立方体（没有模型时用这个，删掉也行） === -->
+      <a-box position="-0.2 0.25 0" rotation="0 25 0"
+             width="0.18" height="0.18" depth="0.18" color="#FF3333">
+      </a-box>
+      <a-box position="0.2 0.25 0" rotation="0 -25 0"
+             width="0.18" height="0.18" depth="0.18" color="#FFD700">
+      </a-box>
+      <a-box position="0 0.48 0" rotation="0 45 0"
+             width="0.15" height="0.15" depth="0.15" color="#44CC44">
+      </a-box>
+      <a-box position="0 0.12 0"
+             width="0.05" height="0.25" depth="0.05" color="#4488CC">
+      </a-box>
+
+      <!-- ============================================
+           🔄🔄🔄  替换 3D 内容到这里结束  🔄🔄🔄
+           ============================================ -->
+
+      <!-- === ⬇️ 底座 + 装饰（不改也行） === -->
+      <a-box position="0 0 0" width="0.45" height="0.04" depth="0.3" color="#8844CC"></a-box>
+
+      <a-ring position="0 0.04 0" rotation="-90 0 0"
+              radius-inner="0.25" radius-outer="0.28" color="#FFD700"
+              animation="property: rotation; to: -90 360 0; dur: 4000; loop: true; easing: linear">
+      </a-ring>
+
+      <!-- === ✨ 粒子 === -->
+      <a-entity position="0 0.2 0">
+        <a-entity particle-system="preset: dust;
+                 maxParticles: 50;
+                 particleSize: 0.008;
+                 color: #C9A96E,#D4B87A;
+                 duration: 2; lifetime: 2.5;
+                 positionSpread: 0.25 0.3 0.2;
+                 velocityValue: 0 0.02 0">
+        </a-entity>
+      </a-entity>
+
+    </a-entity>
+
+    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+  </a-scene>
+
+  <script>
+    var msg = document.getElementById('msg');
+    var scene = document.getElementById('ar-scene');
+    var model3d = document.getElementById('model-3d');
+
+    // === MindAR 跟踪事件 ===
+    scene.addEventListener('targetFound', function() {
+      document.body.classList.add('found');
+      msg.textContent = '✅ 识别成功！移动手机查看';
+    });
+
+    scene.addEventListener('targetLost', function() {
+      document.body.classList.remove('found');
+      msg.textContent = '📱 对准图像目标';
+    });
+
+    scene.addEventListener('arError', function() {
+      msg.textContent = '⚠️ 摄像头启动失败，请检查 HTTPS';
+      msg.style.color = '#ff6b6b';
+    });
+
+    // === 模型加载成功 → 显示模型，隐藏兜底立方体 ===
+    if (model3d) {
+      model3d.addEventListener('model-loaded', function() {
+        model3d.setAttribute('visible', 'true');
+        console.log('✅ 3D 模型加载成功');
+      });
+      model3d.addEventListener('model-error', function(e) {
+        console.log('ℹ️ 无 3D 模型，使用兜底立方体');
+      });
+    }
+  </script>
+</body>
+</html>
